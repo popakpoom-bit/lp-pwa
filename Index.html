@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#3b82f6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>LP | ระบบจัดการสินค้า</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="/api.js"></script>
+  <style>
+    body { background-color: #f1f5f9; font-family: 'Sarabun', sans-serif; padding: 8px; margin: 0; }
+    .card-custom { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 15px; border-top: 4px solid #3b82f6; }
+    .card-pallet { background: #fffdfa; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 15px; border-top: 4px solid #eab308; }
+    .card-verify { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 12px; border-top: 4px solid #10b981; }
+    .card-history { background: #f8fafc; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 12px; border-top: 4px solid #ef4444; margin-top: 20px; }
+    .card-truck { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 15px; border-top: 4px solid #0dcaf0; }
+    label { font-weight: 600; margin-bottom: 5px; color: #333; font-size: 0.9rem; }
+    .form-control { margin-bottom: 15px; height: 42px; border-radius: 5px; border: 1px solid #ced4da; font-size: 0.95rem; }
+    .form-control:focus { border-color: #eab308; box-shadow: 0 0 0 0.2rem rgba(234,179,8,.25); }
+    .table-container { background: white; padding: 5px; border-radius: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); overflow-x: hidden; }
+    .table-sm th, .table-sm td { padding: 6px 4px; font-size: 0.8rem; vertical-align: middle; }
+    .barcode-text { word-break: break-all; font-size: 0.85rem; }
+    .status-header { display: flex; justify-content: space-between; align-items: center; color: #333; font-weight: 600; margin-bottom: 10px; border-bottom: 2px solid #e9ecef; padding-bottom: 8px; }
+    .status-header span { font-size: 0.9rem !important; }
+    .fade-in { animation: fadeIn 0.5s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; display: none; align-items: center; justify-content: center; }
+    .custom-modal-box { background: white; padding: 20px 15px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: popIn 0.3s ease; }
+    .modal-icon { font-size: 40px; margin-bottom: 10px; line-height: 1; }
+    .modal-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; color: #333; }
+    .modal-text { font-size: 0.9rem; color: #555; margin-bottom: 15px; }
+    .modal-btn { width: 100%; padding: 8px; font-weight: bold; font-size: 0.95rem; border-radius: 8px; border: none; color: white; cursor: pointer; }
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .badge-status { font-size: 0.75rem; padding: 4px 6px; border-radius: 4px; font-weight: bold; display: inline-block; }
+    .badge-wait { background-color: #f8f9fa; border: 1px solid #ced4da; color: #6c757d; }
+    .badge-success { background-color: #198754; color: white; }
+    .row-unverified { background-color: #ffffff; }
+    .row-verified { background-color: #d1e7dd !important; }
+    .row-history { background-color: #fff; }
+    .mode-btn { transition: all 0.3s ease; }
+    .scanner-btn-group { display: flex; gap: 8px; margin-top: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    .scanner-btn-group .btn { flex: 1; min-width: 100px; font-size: 0.85rem; padding: 10px 8px; font-weight: bold; }
+    .btn-camera-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
+    .btn-camera-primary:active { transform: scale(0.95); }
+    .hidden-file-input { display: none; }
+    .scan-hint { font-size: 0.75rem; color: #6c757d; margin-top: 8px; background: #fff3cd; padding: 8px; border-radius: 5px; border-left: 3px solid #ffc107; }
+    .install-banner { position: fixed; bottom: 0; left: 0; right: 0; background: #3b82f6; color: white; padding: 12px; text-align: center; z-index: 9998; display: none; }
+    .install-banner button { background: white; color: #3b82f6; border: none; padding: 6px 16px; border-radius: 20px; font-weight: bold; margin-left: 10px; }
+  </style>
+</head>
+<body>
+
+  <div class="container p-0" style="max-width: 800px; padding-bottom: 60px;">
+    <div class="text-center mb-2 mt-2">
+      <h4 style="font-weight: bold; color: #333;">📦 LP | ระบบจัดการสินค้า</h4>
+    </div>
+
+    <div class="d-flex gap-2 mb-3 px-2">
+      <button id="btnModeVerify" class="btn btn-primary w-50 fw-bold mode-btn shadow-sm" onclick="switchMode('verify')">📦 กระทบยอด</button>
+      <button id="btnModeTruck" class="btn btn-outline-info w-50 fw-bold mode-btn shadow-sm text-dark" onclick="switchMode('truck')"> โหลดขึ้นรถ</button>
+    </div>
+
+    <!-- ================= โซน: กระทบยอดพาเลท ================= -->
+    <div id="sectionVerifyMode">
+      <div class="card-custom mb-3 mx-2">
+        <div class="row m-0">
+          <div class="col-12 p-0">
+            <label>1. รหัสพนักงาน LP (ID)</label>
+            <input type="number" id="lpId" class="form-control" placeholder="กรอกรหัสพนักงาน..." onfocus="this.select()">
+          </div>
+          <div class="col-12 p-0">
+            <label>2. วันที่อ้างอิงข้อมูล (รอบจัดส่ง)</label>
+            <input type="date" id="checkDate" class="form-control">
+          </div>
+          <div class="col-12 p-0">
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary w-75 fw-bold py-2" style="font-size: 0.95rem;" id="btnLoadDB" onclick="fetchDatabase(false)">⬇️ โหลดข้อมูล (เตรียมพร้อม)</button>
+              <button class="btn btn-outline-warning fw-bold py-2 px-2" style="font-size: 0.85rem;" onclick="fetchDatabase(true)" title="บังคับโหลดข้อมูลใหม่">🔄</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="palletSection" style="display:none;" class="card-pallet mb-3 mx-2 fade-in">
+        <label style="color: #ca8a04;">3. รหัสพาเลทที่ต้องการเช็ค</label>
+        <div class="d-flex gap-2">
+          <input type="text" id="palletId" class="form-control mb-0 w-100" placeholder="เช่น LT1..." onfocus="this.select()">
+          <button class="btn btn-warning fw-bold text-dark px-3" style="white-space: nowrap;" id="btnLoadPallet" onclick="loadPallet()">กางข้อมูล</button>
+        </div>
+      </div>
+
+      <div id="verifySection" style="display:none;" class="mx-2 fade-in">
+        <div class="card-verify">
+          <div class="mb-3 p-2 text-center" style="background-color: #e0f2fe; border-radius: 8px; border: 1px dashed #0284c7;">
+            <label style="color: #0284c7; font-size: 0.95rem; margin-bottom: 5px;">🎯 4. สแกนเพื่อกระทบยอด</label>
+            <input type="text" id="barcodeVerify" class="form-control mb-0 text-center fw-bold fs-6" style="border-color: #0284c7; height: 40px;" placeholder="ยิงบาร์โค้ดที่นี่..." autocomplete="off" inputmode="none">
+            <div class="scanner-btn-group">
+              <button class="btn btn-camera-primary w-100" onclick="openNativeCamera('barcodeVerify')" style="font-size: 1rem; padding: 12px;">📸 ถ่ายรูปสแกนบาร์โค้ด</button>
+              <button class="btn btn-outline-secondary" onclick="openGallery('barcodeVerify')" style="flex: 0.5;">🖼️ เลือกรูป</button>
+            </div>
+            <div class="scan-hint">💡 กดปุ่มด้านบนเพื่อเปิดกล้อง → ถ่ายรูปบาร์โค้ด → ระบบจะอ่านอัตโนมัติ</div>
+          </div>
+          <input type="file" id="cameraInputVerify" class="hidden-file-input" accept="image/*" capture="environment" onchange="handleCameraImage(event, 'barcodeVerify')">
+          <input type="file" id="galleryInputVerify" class="hidden-file-input" accept="image/*" onchange="handleCameraImage(event, 'barcodeVerify')">
+
+          <div class="table-container">
+            <div class="status-header">
+              <span>พาเลท: <strong id="showPalletName" class="text-primary"></strong></span>
+              <span id="progressText" style="font-weight: bold; color: #dc3545; font-size: 1.1rem !important;">(0/0)</span>
+            </div>
+            <table class="table table-sm text-center align-middle mb-2">
+              <thead class="table-light">
+                <tr><th width="10%">#</th><th width="45%">บาร์โค้ด</th><th width="20%">ขนส่ง</th><th width="25%">สถานะ</th></tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+            <div class="d-grid mt-3">
+              <button class="btn btn-success fw-bold py-2" style="font-size: 0.95rem;" id="saveBtn" onclick="saveData()">💾 ยืนยันบันทึกข้อมูล</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="historySection" class="card-history fade-in" style="display: none;">
+          <div class="status-header text-danger border-danger mb-2" style="padding-bottom: 5px;">
+            <span>📋 5. บันทึกแล้ว (โหมดลบแก้ไข)</span>
+            <span id="historyCountText" style="font-weight: bold; font-size: 1rem !important; color: #555;">0 ชิ้น</span>
+          </div>
+          <div class="mb-2 p-2" style="background-color: #fef2f2; border-radius: 5px; border: 1px dashed #ef4444;">
+            <label style="font-size: 0.85rem; color: #dc3545; margin-bottom: 5px;">🔍 สแกนบาร์โค้ดเพื่อค้นหาและลบ</label>
+            <input type="text" id="searchBarcodeHistory" class="form-control mb-0 text-center fw-bold" style="border-color: #ef4444; height: 40px;" placeholder="สแกนบาร์โค้ด..." onkeyup="filterHistoryTable()" onfocus="this.select()" autocomplete="off" inputmode="none">
+          </div>
+          <div class="table-container bg-light border border-danger">
+            <table class="table table-sm text-center align-middle mb-0">
+              <thead class="table-danger text-danger">
+                <tr><th width="10%">#</th><th width="45%">บาร์โค้ด</th><th width="20%">ขนส่ง</th><th width="25%">ลบออก</th></tr>
+              </thead>
+              <tbody id="historyTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= โซน: จัดพาเลทขึ้นรถ ================= -->
+    <div id="sectionTruckMode" style="display:none;" class="fade-in">
+      <div class="card-custom mb-3 mx-2">
+        <div class="row m-0">
+          <div class="col-12 p-0">
+            <label>1. วันที่อ้างอิงข้อมูลพาเลท</label>
+            <input type="date" id="truckCheckDate" class="form-control">
+          </div>
+          <div class="col-12 p-0">
+            <div class="d-flex gap-2">
+              <button class="btn btn-info w-75 fw-bold py-2 text-white" style="font-size: 0.95rem; background-color: #0891b2; border:none;" id="btnLoadTruckDB" onclick="fetchTruckDatabase(false)">⬇️ ดึงข้อมูลพาเลท (เตรียมพร้อม)</button>
+              <button class="btn btn-outline-warning fw-bold py-2 px-2" style="font-size: 0.85rem;" onclick="fetchTruckDatabase(true)" title="บังคับโหลดข้อมูลใหม่">🔄</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="truckDetailsSection" class="card-truck mb-3 mx-2 fade-in" style="display: none;">
+        <div class="row m-0">
+          <div class="col-6 p-0 pe-1">
+            <label>2. ทะเบียนรถ <span class="text-danger">*</span></label>
+            <input type="text" id="truckReg" class="form-control text-center fw-bold" placeholder="เช่น ฆก111">
+          </div>
+          <div class="col-6 p-0 ps-1">
+            <label>3. รอบจัดส่ง <span class="text-danger">*</span></label>
+            <input type="number" id="truckRound" class="form-control text-center fw-bold" placeholder="เช่น 1 หรือ 2">
+          </div>
+        </div>
+      </div>
+
+      <div id="truckScanSection" class="card-verify mx-2 mb-3 fade-in" style="border-top-color: #0dcaf0; display: none;">
+        <div class="mb-3 p-2 text-center" style="background-color: #ecfeff; border-radius: 8px; border: 1px dashed #0891b2;">
+          <label style="color: #0891b2; font-size: 0.95rem; margin-bottom: 5px;">🚛 4. สแกนพาเลทขึ้นรถ</label>
+          <input type="text" id="scanPalletTruck" class="form-control mb-0 text-center fw-bold fs-6" style="border-color: #0891b2; height: 40px;" placeholder="ยิงบาร์โค้ดพาเลท S01..." autocomplete="off" inputmode="none">
+          <div class="scanner-btn-group">
+            <button class="btn btn-camera-primary w-100" onclick="openNativeCamera('scanPalletTruck')" style="font-size: 1rem; padding: 12px;">📸 ถ่ายรูปสแกนพาเลท</button>
+            <button class="btn btn-outline-secondary" onclick="openGallery('scanPalletTruck')" style="flex: 0.5;">🖼️ เลือกรูป</button>
+          </div>
+          <div class="scan-hint"> กดปุ่มด้านบนเพื่อเปิดกล้อง → ถ่ายรูปบาร์โค้ด → ระบบจะอ่านอัตโนมัติ</div>
+        </div>
+        <input type="file" id="cameraInputTruck" class="hidden-file-input" accept="image/*" capture="environment" onchange="handleCameraImage(event, 'scanPalletTruck')">
+        <input type="file" id="galleryInputTruck" class="hidden-file-input" accept="image/*" onchange="handleCameraImage(event, 'scanPalletTruck')">
+
+        <div class="table-container">
+          <div class="status-header">
+            <span>รายการโหลดขึ้นรถ</span>
+            <span id="truckTotalCount" style="font-weight: bold; color: #0891b2; font-size: 1rem !important;">รวม 0 พาเลท (0 กล่อง)</span>
+          </div>
+          <table class="table table-sm text-center align-middle mb-2">
+            <thead class="table-light">
+              <tr><th width="15%">#</th><th width="45%">พาเลท</th><th width="40%">สถานะ</th></tr>
+            </thead>
+            <tbody id="truckTableBody"><tr><td colspan="3" class="text-muted py-3">ยังไม่มีพาเลทที่สแกน</td></tr></tbody>
+          </table>
+          <div class="d-grid mt-3">
+            <button class="btn btn-info text-white fw-bold py-2" style="font-size: 0.95rem; background-color: #0891b2; border:none;" id="saveTruckBtn" onclick="saveTruckLoad()">🚀 ยืนยันโหลดขึ้นรถ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ปุ่มติดตั้งแอป -->
+  <div id="installBanner" class="install-banner">
+     ติดตั้งแอปนี้บนหน้าจอหลัก
+    <button onclick="installApp()">ติดตั้งเลย</button>
+  </div>
+
+  <!-- ================= Modals ================= -->
+  <div id="myModal" class="custom-modal-overlay">
+    <div class="custom-modal-box">
+      <div id="myModalIcon" class="modal-icon"></div>
+      <div id="myModalTitle" class="modal-title"></div>
+      <div id="myModalText" class="modal-text"></div>
+      <button id="myModalBtn" class="modal-btn" onclick="closeModal()">ตกลง</button>
+    </div>
+  </div>
+  <div id="confirmModal" class="custom-modal-overlay">
+    <div class="custom-modal-box">
+      <div class="modal-icon">⚠️</div>
+      <div class="modal-title text-warning" style="font-size: 1.2rem;">ยืนยันการบันทึก</div>
+      <div id="confirmModalText" class="modal-text text-start mt-2" style="line-height: 1.4;"></div>
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-secondary w-50 fw-bold p-2" style="font-size: 0.85rem;" onclick="closeConfirmModal()">กลับไปสแกน</button>
+        <button class="btn btn-success w-50 fw-bold p-2" style="font-size: 0.85rem;" id="confirmActionBtn">บันทึกเลย</button>
+      </div>
+    </div>
+  </div>
+  <div id="deleteModal" class="custom-modal-overlay">
+    <div class="custom-modal-box">
+      <div class="modal-icon">️</div>
+      <div class="modal-title text-danger" style="font-size: 1.2rem;">ยืนยันลบข้อมูล</div>
+      <div id="deleteModalText" class="modal-text text-start mt-2" style="line-height: 1.4;"></div>
+      <input type="number" id="deleteConfirmEmpId" class="form-control mt-3 text-center fw-bold" placeholder="กรอกรหัสพนักงานของคุณ..." inputmode="numeric">
+      <div class="d-flex gap-2 mt-2">
+        <button class="btn btn-secondary w-50 fw-bold p-2" style="font-size: 0.85rem;" onclick="closeDeleteModal()">ยกเลิก</button>
+        <button class="btn btn-danger w-50 fw-bold p-2" style="font-size: 0.85rem;" id="confirmDeleteDataBtn" onclick="executeDelete()">ยืนยันลบ</button>
+      </div>
+    </div>
+  </div>
+  <div id="imagePreviewModal" class="custom-modal-overlay">
+    <div class="custom-modal-box" style="max-width: 400px;">
+      <div class="modal-title">📷 กำลังประมวลผลรูปภาพ...</div>
+      <img id="previewImage" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin: 10px 0;">
+      <div id="barcodeResult" class="modal-text" style="font-weight: bold; color: #198754;"></div>
+      <button class="modal-btn" style="background-color: #6c757d;" onclick="closeImagePreview()">ปิด</button>
+    </div>
+  </div>
+
+  <script>
+    var localDatabase = {};
+    var currentPalletItems = [];
+    var currentLpName = "";
+    var verifiedCount = 0;
+    var modalCallback = null;
+    var confirmCallback = null;
+    var deleteTargetBarcode = "";
+    var truckDatabase = {};
+    var truckScannedPallets = [];
+    var currentScannerTarget = "";
+    var deferredPrompt = null;
+
+    document.getElementById('checkDate').valueAsDate = new Date();
+    document.getElementById('truckCheckDate').valueAsDate = new Date();
+
+    // ===== PWA Install =====
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('installBanner').style.display = 'block';
+    });
+
+    function installApp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            document.getElementById('installBanner').style.display = 'none';
+          }
+          deferredPrompt = null;
+        });
+      }
+    }
+
+    // ===== Register Service Worker =====
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered:', reg))
+        .catch(err => console.log('SW error:', err));
+    }
+
+    function playBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.1);
+      } catch (e) {}
+    }
+
+    // ===== Camera Functions =====
+    function openNativeCamera(targetId) {
+      currentScannerTarget = targetId;
+      const inputId = targetId === 'scanPalletTruck' ? 'cameraInputTruck' : 'cameraInputVerify';
+      const input = document.getElementById(inputId);
+      input.value = '';
+      input.click();
+    }
+
+    function openGallery(targetId) {
+      currentScannerTarget = targetId;
+      const inputId = targetId === 'scanPalletTruck' ? 'galleryInputTruck' : 'galleryInputVerify';
+      const input = document.getElementById(inputId);
+      input.value = '';
+      input.click();
+    }
+
+    function handleCameraImage(event, targetId) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showModal('error', 'ไฟล์ไม่ถูกต้อง', 'กรุณาเลือกรูปภาพเท่านั้น');
+        return;
+      }
+
+      const previewImg = document.getElementById('previewImage');
+      const barcodeResult = document.getElementById('barcodeResult');
+      barcodeResult.innerText = '📷 กำลังอ่านบาร์โค้ด...';
+      barcodeResult.style.color = '#ffc107';
+      document.getElementById('imagePreviewModal').style.display = 'flex';
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        previewImg.src = e.target.result;
+        const tempDiv = document.createElement('div');
+        tempDiv.id = 'temp-reader-' + Date.now();
+        tempDiv.style.display = 'none';
+        document.body.appendChild(tempDiv);
+
+        const html5QrCodeTemp = new Html5Qrcode(tempDiv.id);
+        html5QrCodeTemp.scanFile(file, true)
+          .then(decodedText => {
+            playBeep();
+            barcodeResult.innerText = '✅ พบบาร์โค้ด: ' + decodedText;
+            barcodeResult.style.color = '#198754';
+            processScannedCode(decodedText);
+            setTimeout(() => closeImagePreview(), 2000);
+          })
+          .catch(err => {
+            console.error("Barcode read error:", err);
+            barcodeResult.innerText = '❌ ไม่พบบาร์โค้ดในรูป\n\nกรุณา:\n• ถ่ายให้ชัดเจน\n• แสงสว่างเพียงพอ\n• บาร์โค้ดอยู่ในกรอบ\n\nหรือลองพิมพ์เอง';
+            barcodeResult.style.color = '#dc3545';
+          })
+          .finally(() => {
+            try { html5QrCodeTemp.clear(); } catch(e) {}
+            if (tempDiv.parentNode) tempDiv.parentNode.removeChild(tempDiv);
+          });
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function closeImagePreview() {
+      document.getElementById('imagePreviewModal').style.display = 'none';
+      if (currentScannerTarget === 'barcodeVerify') {
+        document.getElementById('barcodeVerify').focus();
+      } else {
+        document.getElementById('scanPalletTruck').focus();
+      }
+    }
+
+    function processScannedCode(decodedText) {
+      if (currentScannerTarget === 'barcodeVerify') {
+        document.getElementById('barcodeVerify').value = decodedText;
+        verifyBarcode(decodedText);
+      } else if (currentScannerTarget === 'scanPalletTruck') {
+        document.getElementById('scanPalletTruck').value = decodedText;
+        verifyPalletForTruck(decodedText);
+      }
+    }
+
+    function switchMode(mode) {
+      if (mode === 'verify') {
+        document.getElementById('sectionVerifyMode').style.display = 'block';
+        document.getElementById('sectionTruckMode').style.display = 'none';
+        document.getElementById('btnModeVerify').className = 'btn btn-primary w-50 fw-bold mode-btn shadow-sm';
+        document.getElementById('btnModeTruck').className = 'btn btn-outline-info w-50 fw-bold mode-btn shadow-sm text-dark';
+      } else {
+        document.getElementById('sectionVerifyMode').style.display = 'none';
+        document.getElementById('sectionTruckMode').style.display = 'block';
+        document.getElementById('btnModeVerify').className = 'btn btn-outline-primary w-50 fw-bold mode-btn shadow-sm text-dark';
+        document.getElementById('btnModeTruck').className = 'btn btn-info w-50 fw-bold mode-btn shadow-sm text-white';
+      }
+    }
+
+    function showModal(type, title, text, callback) {
+      document.getElementById('myModalTitle').innerHTML = title;
+      document.getElementById('myModalText').innerHTML = text;
+      var iconEl = document.getElementById('myModalIcon');
+      var btnEl = document.getElementById('myModalBtn');
+      if (type === 'warning') { iconEl.innerHTML = "⚠️"; btnEl.style.backgroundColor = "#f39c12"; }
+      else if (type === 'error') { iconEl.innerHTML = "❌"; btnEl.style.backgroundColor = "#dc3545"; }
+      else if (type === 'success') { iconEl.innerHTML = "✅"; btnEl.style.backgroundColor = "#28a745"; }
+      else if (type === 'info') { iconEl.innerHTML = "ℹ️"; btnEl.style.backgroundColor = "#17a2b8"; }
+      modalCallback = callback;
+      document.getElementById('myModal').style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById('myModal').style.display = "none";
+      if (modalCallback) modalCallback();
+    }
+
+    function showConfirmModal(text, callback) {
+      document.getElementById('confirmModalText').innerHTML = text;
+      confirmCallback = callback;
+      document.getElementById('confirmModal').style.display = "flex";
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').style.display = "none";
+      confirmCallback = null;
+      document.getElementById('barcodeVerify').focus();
+    }
+
+    document.getElementById('confirmActionBtn').addEventListener('click', function() {
+      if (confirmCallback) confirmCallback();
+      closeConfirmModal();
+    });
+
+    // ===== API Functions (เปลี่ยนจาก google.script.run เป็น API.xxx) =====
+    async function fetchDatabase(forceRefresh = false) {
+      var lpId = document.getElementById('lpId').value.trim();
+      var checkDate = document.getElementById('checkDate').value;
+      var btn = document.getElementById('btnLoadDB');
+
+      if (!lpId) {
+        showModal('error', 'ข้อผิดพลาด', 'กรุณากรอกรหัสพนักงาน LP ก่อนครับ', function() { document.getElementById('lpId').focus(); });
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = "⏳ กำลังโหลดข้อมูล...";
+      document.getElementById('palletSection').style.display = "none";
+      document.getElementById('verifySection').style.display = "none";
+
+      try {
+        const resStr = await API.loadDataForDate(checkDate, lpId, forceRefresh);
+        btn.disabled = false;
+        btn.innerHTML = "️ โหลดข้อมูล (เตรียมพร้อม)";
+
+        var res = typeof resStr === 'string' ? JSON.parse(resStr) : resStr;
+
+        if (res.success) {
+          localDatabase = res.data;
+          currentLpName = res.lpName;
+          showModal('success', 'โหลดฐานข้อมูลสำเร็จ!',
+            'พนักงาน: <b>' + res.lpName + '</b><br>พบออเดอร์ ' + res.count + ' ชิ้น',
+            function() {
+              document.getElementById('palletSection').style.display = "block";
+              document.getElementById('palletId').focus();
+            });
+        } else {
+          showModal('error', 'เกิดข้อผิดพลาด', res.message || 'ไม่ทราบข้อผิดพลาด', null);
+        }
+      } catch(e) {
+        btn.disabled = false;
+        btn.innerHTML = "⬇️ โหลดข้อมูล (เตรียมพร้อม)";
+        showModal('error', 'ระบบขัดข้อง', 'เชื่อมต่อเน็ตล้มเหลว: ' + e.message, null);
+      }
+    }
+
+    function loadPallet() {
+      var palletId = document.getElementById('palletId').value.trim();
+      if (!palletId) {
+        showModal('warning', 'เตือน', 'กรุณากรอกรหัสพาเลทที่ต้องการเช็ค', function() { document.getElementById('palletId').focus(); });
+        return;
+      }
+      if(document.getElementById('searchBarcodeHistory')) document.getElementById('searchBarcodeHistory').value = "";
+
+      var searchPrefix = palletId.toLowerCase() + "-";
+      currentPalletItems = [];
+      verifiedCount = 0;
+
+      for (var bc in localDatabase) {
+        var item = localDatabase[bc];
+        if (item.palletId && item.palletId.toLowerCase().startsWith(searchPrefix)) {
+          currentPalletItems.push({
+            barcode: item.barcode, platform: item.platform, courier: item.courier,
+            dcTimestamp: item.dcTimestamp, palletId: item.palletId, alreadySaved: item.alreadySaved, isVerified: false
+          });
+        }
+      }
+
+      if (currentPalletItems.length === 0) {
+        showModal('info', 'ไม่พบข้อมูลพาเลท', 'ไม่พบรายชื่อบาร์โค้ดในพาเลทนี้ครับ', null);
+        document.getElementById('verifySection').style.display = "none";
+        return;
+      }
+
+      document.getElementById('showPalletName').innerText = palletId.toUpperCase();
+      document.getElementById('verifySection').style.display = "block";
+      renderTable();
+      setTimeout(function() { document.getElementById('barcodeVerify').focus(); }, 300);
+    }
+
+    function verifyBarcode(scannedCode) {
+      var bc = scannedCode.trim().toUpperCase();
+      if (bc === "") return;
+      if (!localDatabase[bc]) {
+        showModal('error', 'ข้อผิดพลาด', 'ไม่พบรหัสบาร์โค้ด ' + bc + ' ในรอบจัดส่งนี้', function() { document.getElementById('barcodeVerify').focus(); });
+        return;
+      }
+      var foundIndex = -1;
+      for (var i = 0; i < currentPalletItems.length; i++) {
+        if (currentPalletItems[i].barcode.toUpperCase() === bc) { foundIndex = i; break; }
+      }
+      if (foundIndex === -1) {
+        showModal('error', 'ระวัง!', 'กล่องบาร์โค้ด<br><strong class="text-danger">' + bc + '</strong><br>ไม่ได้อยู่ในพาเลทนี้!', function() { document.getElementById('barcodeVerify').focus(); });
+        return;
+      }
+      var item = currentPalletItems[foundIndex];
+      if (item.alreadySaved) {
+        showModal('warning', 'เซฟแล้ว!', 'รหัส ' + bc + ' บันทึกแล้ว อยู่ในตารางด้านล่างครับ', function() { document.getElementById('barcodeVerify').focus(); });
+        return;
+      }
+      if (item.isVerified) {
+        showModal('warning', 'สแกนซ้ำ', 'กล่องนี้ถูกยืนยันไปแล้วในรอบนี้', function() { document.getElementById('barcodeVerify').focus(); });
+        return;
+      }
+      item.isVerified = true;
+      verifiedCount++;
+      renderTable();
+    }
+
+    function renderTable() {
+      var tbody = document.getElementById('tableBody');
+      var historyTbody = document.getElementById('historyTableBody');
+      var html = "";
+      var historyHtml = "";
+      var totalWaitToVerify = 0;
+      var historyCount = 0;
+      var waitList = [];
+      var savedHistoryList = [];
+
+      for (var i = 0; i < currentPalletItems.length; i++) {
+        if (currentPalletItems[i].alreadySaved) {
+          savedHistoryList.push(currentPalletItems[i]);
+          historyCount++;
+        } else {
+          waitList.push(currentPalletItems[i]);
+          totalWaitToVerify++;
+        }
+      }
+
+      var progressEl = document.getElementById('progressText');
+      progressEl.innerText = "(" + verifiedCount + "/" + totalWaitToVerify + ")";
+      if (verifiedCount === totalWaitToVerify && totalWaitToVerify > 0) progressEl.style.color = "#198754";
+      else progressEl.style.color = "#dc3545";
+
+      waitList.sort(function(a, b) { return (a.isVerified === b.isVerified) ? 0 : a.isVerified ? -1 : 1; });
+
+      if (waitList.length === 0) {
+        html = '<tr><td colspan="4" class="text-success fw-bold py-2">🎉 พาเลทนี้เช็คครบถ้วนแล้ว!</td></tr>';
+      } else {
+        for (var j = 0; j < waitList.length; j++) {
+          var item = waitList[j];
+          var rowClass = item.isVerified ? "row-verified" : "row-unverified";
+          var statusBadge = item.isVerified ? '<span class="badge-status badge-success">✅ ยืนยัน</span>' : '<span class="badge-status badge-wait">⏳ รอเช็ค</span>';
+          html += '<tr class="' + rowClass + '"><td>' + (j + 1) + '</td><td class="barcode-text"><strong>' + item.barcode + '</strong></td><td>' + item.courier + '</td><td>' + statusBadge + '</td></tr>';
+        }
+      }
+      tbody.innerHTML = html;
+      document.getElementById('historyCountText').innerText = historyCount + " ชิ้น";
+
+      if (savedHistoryList.length > 0) {
+        document.getElementById('historySection').style.display = "block";
+        for (var k = 0; k < savedHistoryList.length; k++) {
+          var hItem = savedHistoryList[k];
+          historyHtml += '<tr class="row-history"><td>' + (k + 1) + '</td><td class="barcode-text"><del>' + hItem.barcode + '</del></td><td>' + hItem.courier + '</td><td><button class="btn btn-sm btn-danger py-0 px-2 fw-bold" style="font-size:0.75rem;" onclick="promptDelete(\'' + hItem.barcode + '\')">ลบ</button></td></tr>';
+        }
+        historyTbody.innerHTML = historyHtml;
+        filterHistoryTable();
+      } else {
+        document.getElementById('historySection').style.display = "none";
+      }
+    }
+
+    function filterHistoryTable() {
+      var input = document.getElementById("searchBarcodeHistory");
+      if (!input) return;
+      var filter = input.value.toUpperCase();
+      var tbody = document.getElementById("historyTableBody");
+      var tr = tbody.getElementsByTagName("tr");
+      for (var i = 0; i < tr.length; i++) {
+        var td = tr[i].getElementsByTagName("td")[1];
+        if (td) {
+          var txtValue = td.textContent || td.innerText;
+          tr[i].style.display = (txtValue.toUpperCase().indexOf(filter) > -1) ? "" : "none";
+        }
+      }
+    }
+
+    function promptDelete(barcode) {
+      deleteTargetBarcode = barcode;
+      document.getElementById('deleteConfirmEmpId').value = "";
+      var msg = "ต้องการลบบาร์โค้ด<br><strong class='text-danger fs-5'>" + barcode + "</strong><br>ออกจากประวัติแผ่นงานใช่หรือไม่?<br><small class='text-muted'>(ของจะถูกดึงกลับไปตารางรอตรวจสอบ)</small>";
+      document.getElementById('deleteModalText').innerHTML = msg;
+      document.getElementById('deleteModal').style.display = "flex";
+      setTimeout(function() { document.getElementById('deleteConfirmEmpId').focus(); }, 300);
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').style.display = "none";
+      deleteTargetBarcode = "";
+      document.getElementById('barcodeVerify').focus();
+    }
+
+    async function executeDelete() {
+      var inputId = document.getElementById('deleteConfirmEmpId').value.trim();
+      var currentId = document.getElementById('lpId').value.trim();
+      if (inputId === "") { alert("กรุณากรอกรหัสพนักงานเพื่อยืนยันสิทธิ์"); document.getElementById('deleteConfirmEmpId').focus(); return; }
+      if (inputId !== currentId) { alert("รหัสพนักงานไม่ตรงกับผู้ล็อกอินปัจจุบัน! ยกเลิกการลบ"); document.getElementById('deleteConfirmEmpId').value = ""; document.getElementById('deleteConfirmEmpId').focus(); return; }
+      document.getElementById('deleteModal').style.display = "none";
+      var checkDate = document.getElementById('checkDate').value;
+      var palletId = document.getElementById('palletId').value.trim();
+      var btn = document.getElementById('confirmDeleteDataBtn');
+      btn.disabled = true; btn.innerText = "กำลังลบ...";
+
+      try {
+        const resStr = await API.deleteVerifiedLPItem(checkDate, palletId, deleteTargetBarcode);
+        btn.disabled = false; btn.innerText = "ยืนยันลบ";
+        var res = typeof resStr === 'string' ? JSON.parse(resStr) : resStr;
+        if (res.status === "success") {
+          if (localDatabase[deleteTargetBarcode]) {
+            localDatabase[deleteTargetBarcode].alreadySaved = false;
+            localDatabase[deleteTargetBarcode].isVerified = false;
+          }
+          document.getElementById('searchBarcodeHistory').value = "";
+          showModal('success', 'ลบข้อมูลสำเร็จ!', 'ดึงรหัส ' + deleteTargetBarcode + ' กลับไปที่คิวรอตรวจสอบแล้ว', function() { loadPallet(); });
+        } else {
+          showModal('error', 'ลบล้มเหลว', res.message || 'ไม่ทราบข้อผิดพลาด', null);
+        }
+      } catch(e) {
+        btn.disabled = false; btn.innerText = "ยืนยันลบ";
+        showModal('error', 'ระบบขัดข้อง', 'การเชื่อมต่ออินเทอร์เน็ตล้มเหลว', null);
+      }
+    }
+
+    async function saveData() {
+      var lpId = document.getElementById('lpId').value.trim();
+      var checkDate = document.getElementById('checkDate').value;
+      var palletId = document.getElementById('palletId').value.trim();
+      var totalWaitToVerify = currentPalletItems.filter(function(item) { return item.alreadySaved === false; }).length;
+
+      if (verifiedCount === 0) {
+        showModal('warning', 'ไม่สามารถบันทึกได้', 'คุณยังไม่ได้สแกนยืนยันสินค้าใหม่เลยครับ', function() { document.getElementById('barcodeVerify').focus(); });
+        return;
+      }
+
+      if (verifiedCount < totalWaitToVerify) {
+        var unverified = totalWaitToVerify - verifiedCount;
+        var msg = "พาเลทนี้มีของค้างตรวจอีก <strong class='text-danger'>" + unverified + " ชิ้น</strong><br><br>คุณต้องการบันทึกเฉพาะที่ยืนยันแล้ว <strong>(" + verifiedCount + " ชิ้น)</strong> ใช่หรือไม่?";
+        showConfirmModal(msg, function() { executeSave(lpId, checkDate, palletId); });
+      } else {
+        executeSave(lpId, checkDate, palletId);
+      }
+    }
+
+    async function executeSave(lpId, checkDate, palletId) {
+      var btn = document.getElementById('saveBtn');
+      btn.disabled = true; btn.innerText = "กำลังบันทึกข้อมูล...";
+      var dataToSave = currentPalletItems.filter(function(item) { return item.alreadySaved === false && item.isVerified === true; });
+
+      try {
+        const resStr = await API.saveVerifiedLPData(lpId, currentLpName, checkDate, palletId, dataToSave);
+        btn.disabled = false; btn.innerText = "💾 ยืนยันบันทึกข้อมูล";
+        var res = typeof resStr === 'string' ? JSON.parse(resStr) : resStr;
+        if (res.success) {
+          for (var i = 0; i < dataToSave.length; i++) {
+            var bcToUpdate = dataToSave[i].barcode;
+            if (localDatabase[bcToUpdate]) localDatabase[bcToUpdate].alreadySaved = true;
+          }
+          showModal('success', 'บันทึกสำเร็จ!', 'บันทึกกระทบยอด ' + res.count + ' ชิ้น เรียบร้อยครับ', function() { loadPallet(); });
+        } else {
+          showModal('error', 'บันทึกล้มเหลว', res.message || 'ไม่ทราบข้อผิดพลาด', null);
+        }
+      } catch(e) {
+        btn.disabled = false; btn.innerText = "💾 ยืนยันบันทึกข้อมูล";
+        showModal('error', 'ระบบขัดข้อง', 'เชื่อมต่อเน็ตล้มเหลว: ' + e.message, null);
+      }
+    }
+
+    async function fetchTruckDatabase(forceRefresh = false) {
+      var checkDate = document.getElementById('truckCheckDate').value;
+      var btn = document.getElementById('btnLoadTruckDB');
+      btn.disabled = true; btn.innerHTML = "⏳ กำลังโหลดข้อมูล...";
+      document.getElementById('truckDetailsSection').style.display = "none";
+      document.getElementById('truckScanSection').style.display = "none";
+
+      try {
+        const resStr = await API.loadVerifiedPalletsForTruck(checkDate, forceRefresh);
+        btn.disabled = false; btn.innerHTML = "️ ดึงข้อมูลพาเลท (เตรียมพร้อม)";
+        var res = typeof resStr === 'string' ? JSON.parse(resStr) : resStr;
+        if (res.success) {
+          truckDatabase = res.data;
+          var palletCount = Object.keys(truckDatabase).length;
+          showModal('success', 'โหลดฐานข้อมูลสำเร็จ!', 'พบพาเลทที่ผ่านการกระทบยอดแล้วทั้งหมด ' + palletCount + ' พาเลท', function() {
+            document.getElementById('truckDetailsSection').style.display = "block";
+            document.getElementById('truckScanSection').style.display = "block";
+            document.getElementById('truckReg').focus();
+          });
+        } else {
+          showModal('error', 'เกิดข้อผิดพลาด', res.message || 'ไม่ทราบข้อผิดพลาด', null);
+        }
+      } catch(e) {
+        btn.disabled = false; btn.innerHTML = "⬇️ ดึงข้อมูลพาเลท (เตรียมพร้อม)";
+        showModal('error', 'ระบบขัดข้อง', 'เชื่อมต่อเน็ตล้มเหลว: ' + e.message, null);
+      }
+    }
+
+    function verifyPalletForTruck(scannedPallet) {
+      var pId = scannedPallet.trim().toUpperCase().split('-')[0];
+      if (pId === "") return;
+      var truckReg = document.getElementById('truckReg').value.trim();
+      var truckRound = document.getElementById('truckRound').value.trim();
+      if (!truckReg || !truckRound) {
+        showModal('warning', 'ข้อมูลไม่ครบ', 'กรุณากรอก <b>ทะเบียนรถ</b> และ <b>รอบจัดส่ง</b> ก่อนเริ่มสแกนครับ', function() {
+          if (!truckReg) document.getElementById('truckReg').focus();
+          else document.getElementById('truckRound').focus();
+        });
+        return;
+      }
+      if (!truckDatabase[pId]) {
+        showModal('error', 'ไม่พบพาเลท', 'ไม่พบพาเลท <b>' + pId + '</b> ในระบบ<br>หรือยังไม่ได้กระทบยอดบันทึกข้อมูลครับ', function() { document.getElementById('scanPalletTruck').focus(); });
+        return;
+      }
+      if (truckDatabase[pId].truck && truckDatabase[pId].truck !== "") {
+        showModal('error', 'โหลดขึ้นรถไปแล้ว!', 'พาเลท <b>' + pId + '</b> ถูกจัดขึ้นรถทะเบียน <b>' + truckDatabase[pId].truck + '</b> รอบ <b>' + truckDatabase[pId].round + '</b> ไปเรียบร้อยแล้ว!', function() { document.getElementById('scanPalletTruck').focus(); });
+        return;
+      }
+      for (var i = 0; i < truckScannedPallets.length; i++) {
+        if (truckScannedPallets[i].palletId === pId) {
+          showModal('warning', 'สแกนซ้ำ', 'พาเลท <b>' + pId + '</b> ถูกเพิ่มในคิวโหลดขึ้นรถด้านล่างแล้วครับ', function() { document.getElementById('scanPalletTruck').focus(); });
+          return;
+        }
+      }
+      truckScannedPallets.push({ palletId: pId, count: truckDatabase[pId].count });
+      renderTruckTable();
+      setTimeout(function() { document.getElementById('scanPalletTruck').focus(); }, 100);
+    }
+
+    function renderTruckTable() {
+      var tbody = document.getElementById('truckTableBody');
+      var html = "";
+      var totalBoxes = 0;
+      if (truckScannedPallets.length === 0) {
+        html = '<tr><td colspan="3" class="text-muted py-3">ยังไม่มีพาเลทที่สแกน</td></tr>';
+      } else {
+        for (var i = truckScannedPallets.length - 1; i >= 0; i--) {
+          var item = truckScannedPallets[i];
+          totalBoxes += item.count;
+          html += '<tr class="row-verified"><td>' + (i + 1) + '</td><td class="barcode-text"><strong>' + item.palletId + '</strong></td><td><span class="badge-status badge-success">📦 ' + item.count + ' กล่อง</span></td></tr>';
+        }
+      }
+      tbody.innerHTML = html;
+      document.getElementById('truckTotalCount').innerText = "รวม " + truckScannedPallets.length + " พาเลท (" + totalBoxes + " กล่อง)";
+    }
+
+    async function saveTruckLoad() {
+      var checkDate = document.getElementById('truckCheckDate').value;
+      var truckReg = document.getElementById('truckReg').value.trim();
+      var truckRound = document.getElementById('truckRound').value.trim();
+      if (!truckReg || !truckRound) {
+        showModal('warning', 'ข้อมูลไม่ครบ', 'กรุณากรอกทะเบียนรถและรอบจัดส่งก่อนครับ', function() {
+          if (!truckReg) document.getElementById('truckReg').focus();
+          else document.getElementById('truckRound').focus();
+        });
+        return;
+      }
+      if (truckScannedPallets.length === 0) {
+        showModal('warning', 'ไม่มีข้อมูล', 'กรุณาสแกนพาเลทเพื่อโหลดขึ้นรถอย่างน้อย 1 พาเลท', function() { document.getElementById('scanPalletTruck').focus(); });
+        return;
+      }
+      var btn = document.getElementById('saveTruckBtn');
+      btn.disabled = true; btn.innerText = "กำลังอัปเดตข้อมูล...";
+      var palletIds = truckScannedPallets.map(function(p) { return p.palletId; });
+
+      try {
+        const resStr = await API.saveTruckLoadData(checkDate, truckReg, truckRound, palletIds);
+        btn.disabled = false; btn.innerText = "🚀 ยืนยันโหลดขึ้นรถ";
+        var res = typeof resStr === 'string' ? JSON.parse(resStr) : resStr;
+        if (res.success) {
+          for(var i = 0; i < palletIds.length; i++) {
+            if(truckDatabase[palletIds[i]]) {
+              truckDatabase[palletIds[i]].truck = truckReg;
+              truckDatabase[palletIds[i]].round = truckRound;
+            }
+          }
+          showModal('success', 'โหลดขึ้นรถสำเร็จ!', 'อัปเดตข้อมูลรถ ' + truckReg + ' ลงในชีตเรียบร้อยครับ', function() {
+            truckScannedPallets = [];
+            renderTruckTable();
+            document.getElementById('scanPalletTruck').focus();
+          });
+        } else {
+          showModal('error', 'บันทึกล้มเหลว', res.message || 'ไม่ทราบข้อผิดพลาด', null);
+        }
+      } catch(e) {
+        btn.disabled = false; btn.innerText = "🚀 ยืนยันโหลดขึ้นรถ";
+        showModal('error', 'ระบบขัดข้อง', 'เชื่อมต่อเน็ตล้มเหลว: ' + e.message, null);
+      }
+    }
+
+    document.getElementById('lpId').addEventListener("keydown", function(e) { if (e.key === "Enter") { e.preventDefault(); if (this.value.trim() !== "") fetchDatabase(); } });
+    document.getElementById('palletId').addEventListener("keydown", function(e) { if (e.key === "Enter") { e.preventDefault(); loadPallet(); } });
+    document.getElementById('barcodeVerify').addEventListener("keydown", function(e) { if (e.key === "Enter") { e.preventDefault(); var val = this.value; this.value = ""; verifyBarcode(val); } });
+    document.getElementById('searchBarcodeHistory').addEventListener("keydown", function(e) { if (e.key === "Enter") { e.preventDefault(); filterHistoryTable(); } });
+    document.getElementById('deleteConfirmEmpId').addEventListener("keydown", function(e) { if (e.key === "Enter") { e.preventDefault(); executeDelete(); } });
+    document.getElementById('scanPalletTruck').addEventListener("keydown", function(e) { if (e.key === "Enter") { e.preventDefault(); var val = this.value; this.value = ""; verifyPalletForTruck(val); } });
+  </script>
+</body>
+</html>
